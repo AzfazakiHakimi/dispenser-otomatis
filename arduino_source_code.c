@@ -13,15 +13,17 @@
 #define ECHO_DINGIN 7
 #define SERVO_DINGIN_PIN 11
 
-// Inisialisasi Objek Servo
+// Inisialisasi Servo
 Servo servoPanas;
 Servo servoNormal;
 Servo servoDingin;
 
-// --- PERBAIKAN: Deklarasi Prototipe Fungsi ---
+// Variabel penanda status dispenser
+bool keranNyala = false;
+
+// Deklarasi Prototipe Fungsi
 long ukurJarak(int trigPin, int echoPin);
 void tekanServo(Servo &servo);
-// ------------------------------------------
 
 void setup() {
   pinMode(TRIG_PANAS, OUTPUT);
@@ -41,19 +43,20 @@ void setup() {
 }
 
 void loop() {
-  long jarakPanas = ukurJarak(TRIG_PANAS, ECHO_PANAS);
-  if (jarakPanas < 10 && jarakPanas > 0) {
-    tekanServo(servoPanas);
-  }
+  // Jalankan pengecekan sensor jarak jika dispenser menganggur
+  if (!keranNyala) {
+    long jarakPanas = ukurJarak(TRIG_PANAS, ECHO_PANAS);
+    if (jarakPanas < 10 && jarakPanas > 0) {
+      tekanServo(servoPanas);
+    }
 
-  long jarakNormal = ukurJarak(TRIG_NORMAL, ECHO_NORMAL);
-  if (jarakNormal < 10 && jarakNormal > 0) {
-    tekanServo(servoNormal);
-  }
+    else if (jarakNormal < 10 && jarakNormal > 0) {
+      tekanServo(servoNormal);
+    }
 
-  long jarakDingin = ukurJarak(TRIG_DINGIN, ECHO_DINGIN);
-  if (jarakDingin < 10 && jarakDingin > 0) {
-    tekanServo(servoDingin);
+    else if (jarakDingin < 10 && jarakDingin > 0) {
+      tekanServo(servoDingin);
+    }
   }
   
   delay(100);
@@ -71,8 +74,14 @@ long ukurJarak(int trigPin, int echoPin) {
 }
 
 void tekanServo(Servo &servo) {
+  // Fokus 1 keran menyala
+  keranNyala = true; 
+
   servo.write(90);
   delay(1000);
   servo.write(0);
   delay(2000); 
+  
+  // Keran selesai
+  keranNyala = false;
 }
