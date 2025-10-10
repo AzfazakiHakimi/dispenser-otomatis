@@ -1,6 +1,6 @@
 #include <Servo.h>
 
-// Definisi Pin
+// Definisi pin
 #define TRIG_PANAS 2
 #define ECHO_PANAS 3
 #define SERVO_PANAS_PIN 9
@@ -13,17 +13,20 @@
 #define ECHO_DINGIN 7
 #define SERVO_DINGIN_PIN 11
 
-// Inisialisasi Servo
+// Batas jarak deteksi gelas (centimeter)
+const int JARAK_THRESHOLD = 10;
+
+// Inisialisasi servo
 Servo servoPanas;
 Servo servoNormal;
 Servo servoDingin;
 
-// Variabel penanda status dispenser
-bool keranNyala = false;
+// 0 = tidak ada yang aktif (standby)
+// 1 = panas aktif, 2 = normal aktif, 3 = dingin aktif
+int servoAktif = 0;
 
-// Deklarasi Prototipe Fungsi
+// Deklarasi prototipe fungsi
 long ukurJarak(int trigPin, int echoPin);
-void tekanServo(Servo &servo);
 
 void setup() {
   pinMode(TRIG_PANAS, OUTPUT);
@@ -43,23 +46,58 @@ void setup() {
 }
 
 void loop() {
-  // Jalankan pengecekan sensor jarak jika dispenser menganggur
-  if (!keranNyala) {
+  // BAGIAN 1: Jika dispenser sedang standby (tidak ada keran yang menyala)
+  if (servoAktif == 0) {
     long jarakPanas = ukurJarak(TRIG_PANAS, ECHO_PANAS);
-    if (jarakPanas < 10 && jarakPanas > 0) {
-      tekanServo(servoPanas);
+    if (jarakPanas < JARAK_THRESHOLD && jarakPanas > 0) {
+      servoPanas.write(90); // Buka keran panas
+      servoAktif = 1;       // Keran panas aktif
     }
-
-    else if (jarakNormal < 10 && jarakNormal > 0) {
-      tekanServo(servoNormal);
+    else {
+      long jarakNormal = ukurJarak(TRIG_NORMAL, ECHO_NORMAL);
+      if (jarakNormal < JARAK_THRESHOLD && jarakNormal > 0) {
+        servoNormal.write(90); // Buka keran normal
+        servoAktif = 2;        // Keran normal aktif
+      }
+      else {
+        long jarakDingin = ukurJarak(TRIG_DINGIN, ECHO_DINGIN);
+        if (jarakDingin < JARAK_THRESHOLD && jarakDingin > 0) {
+          servoDingin.write(90); // Buka keran dingin
+          servoAktif = 3;        // Keran dingin sedang aktif
+        }
+      }
     }
-
-    else if (jarakDingin < 10 && jarakDingin > 0) {
-      tekanServo(servoDingin);
+  }
+  // BAGIAN 2: Jika ada salah satu keran yang sedang menyala
+  else {
+    // Cek apakah gelas pada keran yang aktif sudah ditarik
+    if (servoAktif == 1) { // Jika keran panas aktif
+      long jarakPanas = ukurJarak(TRIG_PANAS, ECHO_PANAS);
+      if (jarakPanas > JARAK_THRESHOLD || jarakPanas == 0) {
+        servoPanas.write(0); // Tutup keran panas
+        servoAktif = 0;      // Kembali ke mode standby
+        delay(1000);
+      }
+    }
+    else if (servoAktif == 2) { // Jika keran normal aktif
+      long jarakNormal = ukurJarak(TRIG_NORMAL, ECHO_NORMAL);
+      if (jarakNormal > JARAK_THRESHOLD || jarakNormal == 0) {
+        servoNormal.write(0); // Tutup keran normal
+        servoAktif = 0; // Kembali ke mode standby
+        delay(1000);
+      }
+    }
+    else if (servoAktif == 3) { // Jika keran dingin aktif
+      long jarakDingin = ukurJarak(TRIG_DINGIN, ECHO_DINGIN);
+      if (jarakDingin > JARAK_THRESHOLD || jarakDingin == 0) {
+        servoDingin.write(0); // Tutup keran dingin
+        servoAktif = 0; // Kembali ke mode standby
+        delay(1000);
+      }
     }
   }
   
-  delay(100);
+  delay(50);
 }
 
 long ukurJarak(int trigPin, int echoPin) {
@@ -71,17 +109,4 @@ long ukurJarak(int trigPin, int echoPin) {
   
   long durasi = pulseIn(echoPin, HIGH);
   return durasi * 0.034 / 2;
-}
-
-void tekanServo(Servo &servo) {
-  // Fokus 1 keran menyala
-  keranNyala = true; 
-
-  servo.write(90);
-  delay(1000);
-  servo.write(0);
-  delay(2000); 
-  
-  // Keran selesai
-  keranNyala = false;
 }
