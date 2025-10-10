@@ -100,6 +100,7 @@ void loop() {
   delay(50);
 }
 
+// Fungsi ukur jarak masing-masing sensor
 long ukurJarak(int trigPin, int echoPin) {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
