@@ -7,3 +7,6 @@ Caranya cukup gampang, siapin:
 - Motor Servo MG996R (x3)
 - Baterai AA 1,5 volt (x4)
 - Kabel jumper male-female
+
+Rancang Bangun (TinkerCad):
+https://www.tinkercad.com/things/kplq6JTszZ6-dispenser-otomatis
